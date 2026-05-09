@@ -1,0 +1,160 @@
+{
+  "protocols": {
+    "susceptible": {
+      "description": "Drug-susceptible TB (DS-TB)",
+      "regimen": {
+        "intensive_phase": {
+          "drugs": ["isoniazid", "rifampicin", "pyrazinamide", "ethambutol"],
+          "duration_weeks": 8,
+          "frequency": "daily"
+        },
+        "continuation_phase": {
+          "drugs": ["isoniazid", "rifampicin"],
+          "duration_weeks": 18,
+          "frequency": "daily"
+        }
+      },
+      "total_duration_weeks": 26,
+      "monitoring": [
+        "Sputum smear and culture at months 2, 5, and 6",
+        "Liver function tests monthly for first 3 months",
+        "Visual acuity baseline and monthly if on ethambutol"
+      ],
+      "who_category": "Category I"
+    },
+    "isoniazid_resistant": {
+      "description": "Isoniazid mono-resistant TB (Hr-TB)",
+      "regimen": {
+        "intensive_phase": {
+          "drugs": ["rifampicin", "ethambutol", "pyrazinamide", "levofloxacin"],
+          "duration_weeks": 8,
+          "frequency": "daily"
+        },
+        "continuation_phase": {
+          "drugs": ["rifampicin", "ethambutol", "levofloxacin"],
+          "duration_weeks": 18,
+          "frequency": "daily"
+        }
+      },
+      "total_duration_weeks": 26,
+      "monitoring": [
+        "Sputum smear and culture at months 2, 4, and 6",
+        "Liver function tests monthly",
+        "ECG at baseline and monthly for QT prolongation"
+      ],
+      "who_category": "Hr-TB regimen (WHO 2022)"
+    },
+    "mdr": {
+      "description": "Multidrug-resistant TB (MDR-TB)",
+      "regimen": {
+        "all_oral_shorter": {
+          "drugs": ["bedaquiline", "pretomanid", "linezolid", "moxifloxacin"],
+          "duration_weeks": 26,
+          "frequency": "daily",
+          "name": "BPaL-M (shorter all-oral)"
+        },
+        "longer_regimen": {
+          "group_a": ["bedaquiline", "linezolid", "levofloxacin"],
+          "group_b": ["clofazimine", "cycloserine"],
+          "group_c": ["ethambutol", "delamanid", "pyrazinamide", "imipenem", "amikacin"],
+          "duration_weeks": 78,
+          "frequency": "daily",
+          "name": "Longer individualized MDR-TB regimen"
+        }
+      },
+      "total_duration_weeks_shorter": 26,
+      "total_duration_weeks_longer": 78,
+      "monitoring": [
+        "Monthly sputum cultures until conversion then every 2 months",
+        "ECG weekly for first month then monthly (bedaquiline QT)",
+        "Complete blood count every 2 weeks (linezolid myelosuppression)",
+        "Visual acuity monthly (linezolid optic neuritis)",
+        "Liver function tests monthly",
+        "Serum potassium and creatinine if on injectable",
+        "Audiometry monthly if on amikacin"
+      ],
+      "who_category": "MDR/RR-TB (WHO 2022 updated)"
+    },
+    "pre_xdr": {
+      "description": "Pre-extensively drug-resistant TB (Pre-XDR-TB)",
+      "regimen": {
+        "primary": {
+          "drugs": ["bedaquiline", "pretomanid", "linezolid"],
+          "duration_weeks": 26,
+          "frequency": "daily",
+          "name": "BPaL regimen (TB-PRACTECAL/ZeNix)"
+        },
+        "alternative": {
+          "drugs": ["bedaquiline", "linezolid", "clofazimine", "cycloserine", "delamanid"],
+          "duration_weeks": 78,
+          "frequency": "daily",
+          "name": "Individualized longer regimen"
+        }
+      },
+      "total_duration_weeks": 26,
+      "monitoring": [
+        "Monthly sputum cultures until conversion",
+        "ECG weekly for first month then biweekly (QT interval)",
+        "Complete blood count weekly for first 4 weeks then biweekly",
+        "Visual acuity and peripheral neuropathy assessment monthly",
+        "Liver function tests biweekly for first month then monthly",
+        "Thyroid function every 3 months"
+      ],
+      "who_category": "Pre-XDR-TB (WHO 2022)"
+    },
+    "xdr": {
+      "description": "Extensively drug-resistant TB (XDR-TB)",
+      "regimen": {
+        "primary": {
+          "drugs": ["bedaquiline", "pretomanid", "linezolid"],
+          "duration_weeks": 26,
+          "frequency": "daily",
+          "name": "BPaL regimen"
+        },
+        "salvage": {
+          "drugs": ["bedaquiline", "delamanid", "linezolid", "clofazimine", "cycloserine"],
+          "duration_weeks": 78,
+          "frequency": "daily",
+          "name": "Individualized salvage regimen"
+        }
+      },
+      "total_duration_weeks": 26,
+      "monitoring": [
+        "Weekly sputum cultures for first 2 months then monthly",
+        "ECG twice weekly for first 2 weeks then weekly",
+        "Complete blood count weekly (linezolid)",
+        "Visual acuity and neuropathy assessment biweekly",
+        "Liver function tests weekly for first month",
+        "Consider therapeutic drug monitoring for linezolid"
+      ],
+      "who_category": "XDR-TB (WHO 2022)"
+    }
+  },
+  "nepal_drug_availability": {
+    "isoniazid": {"available": true, "source": "NTP supply", "cost_category": "free"},
+    "rifampicin": {"available": true, "source": "NTP supply", "cost_category": "free"},
+    "pyrazinamide": {"available": true, "source": "NTP supply", "cost_category": "free"},
+    "ethambutol": {"available": true, "source": "NTP supply", "cost_category": "free"},
+    "levofloxacin": {"available": true, "source": "NTP supply", "cost_category": "free"},
+    "moxifloxacin": {"available": true, "source": "NTP/GDF supply", "cost_category": "free"},
+    "bedaquiline": {"available": true, "source": "GDF/USAID donation", "cost_category": "free"},
+    "linezolid": {"available": true, "source": "GDF supply", "cost_category": "free"},
+    "clofazimine": {"available": true, "source": "GDF supply", "cost_category": "free"},
+    "cycloserine": {"available": true, "source": "GDF supply", "cost_category": "free"},
+    "delamanid": {"available": true, "source": "Limited - GENETUP/NTC only", "cost_category": "free"},
+    "pretomanid": {"available": false, "source": "Not yet registered in Nepal", "cost_category": "N/A"},
+    "amikacin": {"available": true, "source": "NTP supply", "cost_category": "free"},
+    "streptomycin": {"available": true, "source": "NTP supply", "cost_category": "free"},
+    "ethionamide": {"available": true, "source": "NTP supply", "cost_category": "free"},
+    "para_aminosalicylic_acid": {"available": true, "source": "Limited supply", "cost_category": "free"},
+    "imipenem": {"available": false, "source": "Hospital pharmacy only", "cost_category": "expensive"},
+    "capreomycin": {"available": false, "source": "Discontinued globally", "cost_category": "N/A"}
+  },
+  "nepal_treatment_centers": [
+    {"name": "National Tuberculosis Centre (NTC)", "location": "Thimi, Bhaktapur", "level": "National reference", "services": ["DST", "MDR treatment", "Pre-XDR/XDR treatment"]},
+    {"name": "GENETUP", "location": "Kalimati, Kathmandu", "level": "Specialized", "services": ["MDR treatment", "Culture/DST", "GeneXpert"]},
+    {"name": "BP Koirala Institute of Health Sciences", "location": "Dharan, Sunsari", "level": "Regional", "services": ["MDR treatment", "GeneXpert"]},
+    {"name": "National Academy of Medical Sciences", "location": "Bir Hospital, Kathmandu", "level": "Tertiary", "services": ["MDR treatment", "GeneXpert"]},
+    {"name": "Patan Academy of Health Sciences", "location": "Lalitpur", "level": "Tertiary", "services": ["GeneXpert", "MDR treatment"]}
+  ]
+}

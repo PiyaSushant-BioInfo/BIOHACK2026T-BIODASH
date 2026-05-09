@@ -1,0 +1,148 @@
+{% extends "base.html" %}
+{% block title %}TBAnalytica — Home{% endblock %}
+
+{% block content %}
+<!-- Home cards -->
+<section class="home-section" id="home-section">
+    <h1 class="home-title">TB Variant Analysis System</h1>
+    <p class="home-subtitle">Clinical decision support for drug-resistant tuberculosis in Nepal</p>
+
+    <div class="card-grid">
+        <button class="action-card" onclick="showForm('known')">
+            <div class="card-icon">&#128300;</div>
+            <h2>Analyze Known Variant</h2>
+            <p>Look up a variant from the database by lineage or ID</p>
+        </button>
+        <button class="action-card" onclick="showForm('new')">
+            <div class="card-icon">&#129516;</div>
+            <h2>Analyze New Variant</h2>
+            <p>Submit a sequence or NCBI accession for analysis</p>
+        </button>
+        <button class="action-card" onclick="showForm('compare')">
+            <div class="card-icon">&#128260;</div>
+            <h2>Compare Variants</h2>
+            <p>Compare two variants side by side</p>
+        </button>
+        <button class="action-card" onclick="startDemo()">
+            <div class="card-icon">&#9654;</div>
+            <h2>Run Demo</h2>
+            <p>Full end-to-end pipeline demonstration</p>
+        </button>
+    </div>
+</section>
+
+<!-- Analysis forms -->
+<section class="form-section hidden" id="form-section">
+    <button class="back-btn" onclick="showHome()">&larr; Back to menu</button>
+
+    <!-- Known variant form -->
+    <div class="form-card hidden" id="form-known">
+        <h2>Analyze Known Variant</h2>
+        <form id="known-form" onsubmit="return submitKnown(event)">
+            <div class="form-group">
+                <label for="known-variant">Select Lineage / Variant</label>
+                <select id="known-variant" name="variant_id" required>
+                    <option value="">-- Select --</option>
+                    <option value="beijing">Lineage 2 (Beijing)</option>
+                    <option value="cas">Lineage 3 (CAS / Delhi)</option>
+                    <option value="euro-american">Lineage 4 (Euro-American)</option>
+                    <option value="indo-oceanic">Lineage 1 (Indo-Oceanic)</option>
+                    <option value="TB_VAR_002">MDR-TB strain (TB_VAR_002)</option>
+                    <option value="TB_VAR_005">XDR-TB strain (TB_VAR_005)</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="known-patient">Patient ID <span class="optional">(optional)</span></label>
+                <input type="text" id="known-patient" name="patient_id" placeholder="e.g. NP-2024-001">
+            </div>
+            <button type="submit" class="btn btn-primary">Run Analysis</button>
+        </form>
+    </div>
+
+    <!-- New variant form -->
+    <div class="form-card hidden" id="form-new">
+        <h2>Analyze New / Unknown Variant</h2>
+        <form id="new-form" onsubmit="return submitNew(event)">
+            <div class="form-group">
+                <label>Input type</label>
+                <div class="radio-group">
+                    <label class="radio-label">
+                        <input type="radio" name="input_type" value="accession" checked
+                               onchange="toggleNewInput(this.value)">
+                        I have an NCBI accession
+                    </label>
+                    <label class="radio-label">
+                        <input type="radio" name="input_type" value="sequence"
+                               onchange="toggleNewInput(this.value)">
+                        I have a sequence
+                    </label>
+                </div>
+            </div>
+            <div class="form-group" id="accession-group">
+                <label for="new-accession">NCBI Accession Number</label>
+                <input type="text" id="new-accession" name="accession" placeholder="e.g. NC_000962.3">
+            </div>
+            <div class="form-group hidden" id="sequence-group">
+                <label for="new-sequence">Protein or Nucleotide Sequence</label>
+                <textarea id="new-sequence" name="sequence" rows="4"
+                          placeholder="Paste full sequence here..."></textarea>
+            </div>
+            <div class="form-group">
+                <label for="new-gene">Gene</label>
+                <select id="new-gene" name="gene_name">
+                    <option value="rpoB">rpoB (rifampicin resistance)</option>
+                    <option value="katG">katG (isoniazid resistance)</option>
+                    <option value="inhA">inhA (isoniazid resistance)</option>
+                    <option value="gyrA">gyrA (fluoroquinolone resistance)</option>
+                    <option value="gyrB">gyrB (fluoroquinolone resistance)</option>
+                    <option value="pncA">pncA (pyrazinamide resistance)</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="new-patient">Patient ID <span class="optional">(optional)</span></label>
+                <input type="text" id="new-patient" name="patient_id" placeholder="e.g. NP-2024-001">
+            </div>
+            <button type="submit" class="btn btn-primary">Run Analysis</button>
+        </form>
+    </div>
+
+    <!-- Compare form -->
+    <div class="form-card hidden" id="form-compare">
+        <h2>Compare Two Variants</h2>
+        <form id="compare-form" onsubmit="return submitCompare(event)">
+            <div class="form-group">
+                <label for="cmp-first">First Variant ID</label>
+                <input type="text" id="cmp-first" name="variant_id" required
+                       placeholder="e.g. TB_VAR_002 or Beijing">
+            </div>
+            <div class="form-group">
+                <label for="cmp-second">Second Variant ID or NCBI Accession</label>
+                <input type="text" id="cmp-second" name="second_input" required
+                       placeholder="e.g. TB_VAR_003 or NC_000962.3">
+            </div>
+            <button type="submit" class="btn btn-primary">Compare</button>
+        </form>
+    </div>
+</section>
+
+<!-- Loading / progress -->
+<section class="progress-section hidden" id="progress-section">
+    <div class="progress-card">
+        <h2>Analysis in Progress</h2>
+        <p class="progress-subtitle">Please wait while TBAnalytica processes your request...</p>
+        <div id="progress-notification" class="notification-banner hidden"></div>
+        <div id="progress-steps"></div>
+        <div class="spinner" id="spinner"></div>
+    </div>
+</section>
+
+<!-- Error display -->
+<section class="error-section hidden" id="error-section">
+    <div class="error-card">
+        <div class="error-icon">&#9888;</div>
+        <h2>Analysis Failed</h2>
+        <p id="error-message"></p>
+        <button class="btn btn-primary" onclick="showHome()">Try Again</button>
+    </div>
+</section>
+{% endblock %}

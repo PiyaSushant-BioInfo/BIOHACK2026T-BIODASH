@@ -1,0 +1,914 @@
+"""
+TBAnalytica Report Generator
+Produces clinical (doctor) and patient PDF reports using ReportLab.
+Two versions per report: technical/dense for clinicians,
+plain-language for patients.
+"""
+
+from pathlib import Path
+from datetime import datetime
+from typing import Optional
+import sys
+
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+
+from schema import (
+    ClinicalReport, TBVariant, ComparisonResult,
+    RiskScore, Mutation, DrugSensitivity,
+    DataQualityScore, QUALITY_GATE_THRESHOLD,
+)
+
+from reportlab.lib import colors
+from reportlab.lib.pagesizes import A4
+from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+from reportlab.lib.units import cm
+from reportlab.platypus import (
+    SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle,
+    HRFlowable, KeepTogether,
+)
+from reportlab.lib.enums import TA_CENTER, TA_LEFT, TA_RIGHT
+
+OUTPUT_DIR = Path(__file__).resolve().parent.parent / "output"
+OUTPUT_DIR.mkdir(exist_ok=True)
+
+PAGE_WIDTH = A4[0]
+
+
+# ---------------------------------------------------------------------------
+# Styles
+# ---------------------------------------------------------------------------
+
+def _get_styles():
+    styles = getSampleStyleSheet()
+
+    styles.add(ParagraphStyle(
+        name="ReportTitle",
+        parent=styles["Title"],
+        fontSize=18,
+        spaceAfter=6,
+        textColor=colors.HexColor("#2c3e50"),
+    ))
+    styles.add(ParagraphStyle(
+        name="Subtitle",
+        parent=styles["Normal"],
+        fontSize=10,
+        textColor=colors.HexColor("#7f8c8d"),
+        alignment=TA_CENTER,
+        spaceAfter=14,
+    ))
+    styles.add(ParagraphStyle(
+        name="SectionHeader",
+        parent=styles["Heading2"],
+        fontSize=13,
+        textColor=colors.HexColor("#2980b9"),
+        spaceAfter=8,
+        spaceBefore=14,
+    ))
+    styles.add(ParagraphStyle(
+        name="SubSection",
+        parent=styles["Heading3"],
+        fontSize=11,
+        textColor=colors.HexColor("#34495e"),
+        spaceAfter=6,
+        spaceBefore=10,
+    ))
+    styles.add(ParagraphStyle(
+        name="WarningText",
+        parent=styles["Normal"],
+        textColor=colors.HexColor("#e74c3c"),
+        fontSize=10,
+        fontName="Helvetica-Bold",
+    ))
+    styles.add(ParagraphStyle(
+        name="BodyText9",
+        parent=styles["Normal"],
+        fontSize=9,
+        leading=12,
+    ))
+    styles.add(ParagraphStyle(
+        name="SmallItalic",
+        parent=styles["Normal"],
+        fontSize=8,
+        textColor=colors.grey,
+        fontName="Helvetica-Oblique",
+    ))
+    styles.add(ParagraphStyle(
+        name="PatientTitle",
+        parent=styles["Title"],
+        fontSize=20,
+        spaceAfter=6,
+        textColor=colors.HexColor("#27ae60"),
+    ))
+    styles.add(ParagraphStyle(
+        name="PatientBody",
+        parent=styles["Normal"],
+        fontSize=11,
+        leading=16,
+        spaceAfter=8,
+    ))
+    styles.add(ParagraphStyle(
+        name="PatientHeading",
+        parent=styles["Heading2"],
+        fontSize=14,
+        textColor=colors.HexColor("#27ae60"),
+        spaceAfter=8,
+        spaceBefore=14,
+    ))
+    styles.add(ParagraphStyle(
+        name="Footer",
+        parent=styles["Normal"],
+        fontSize=8,
+        alignment=TA_CENTER,
+        textColor=colors.grey,
+    ))
+    return styles
+
+
+_RISK_COLORS = {
+    "green": colors.HexColor("#2ecc71"),
+    "yellow": colors.HexColor("#f1c40f"),
+    "red": colors.HexColor("#e74c3c"),
+    "black": colors.HexColor("#2c3e50"),
+}
+
+_TABLE_HEADER_STYLE = TableStyle([
+    ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
+    ("FONTSIZE", (0, 0), (-1, -1), 8),
+    ("GRID", (0, 0), (-1, -1), 0.5, colors.grey),
+    ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#2980b9")),
+    ("TEXTCOLOR", (0, 0), (-1, 0), colors.white),
+    ("BOTTOMPADDING", (0, 0), (-1, -1), 4),
+    ("TOPPADDING", (0, 0), (-1, -1), 4),
+    ("VALIGN", (0, 0), (-1, -1), "TOP"),
+])
+
+_KV_TABLE_STYLE = TableStyle([
+    ("FONTNAME", (0, 0), (0, -1), "Helvetica-Bold"),
+    ("FONTSIZE", (0, 0), (-1, -1), 9),
+    ("GRID", (0, 0), (-1, -1), 0.5, colors.grey),
+    ("BACKGROUND", (0, 0), (0, -1), colors.HexColor("#ecf0f1")),
+    ("BOTTOMPADDING", (0, 0), (-1, -1), 5),
+    ("TOPPADDING", (0, 0), (-1, -1), 5),
+    ("VALIGN", (0, 0), (-1, -1), "TOP"),
+])
+
+
+# ---------------------------------------------------------------------------
+# Shared helpers
+# ---------------------------------------------------------------------------
+
+def _header_block(styles, title: str, accent_color: str = "#2980b9"):
+    return [
+        Paragraph("TBAnalytica", styles["ReportTitle"]),
+        Paragraph(title, styles["Subtitle"]),
+        HRFlowable(width="100%", thickness=2, color=colors.HexColor(accent_color)),
+        Spacer(1, 10),
+    ]
+
+
+def _footer_block(styles):
+    return [
+        Spacer(1, 24),
+        HRFlowable(width="100%", thickness=1, color=colors.grey),
+        Spacer(1, 4),
+        Paragraph(
+            f"<i>Generated by TBAnalytica | {datetime.now().strftime('%Y-%m-%d %H:%M')} | "
+            f"For clinical use in Nepal | WHO 2022 guidelines</i>",
+            styles["Footer"],
+        ),
+    ]
+
+
+def _risk_badge(risk: RiskScore, styles) -> list:
+    color = _RISK_COLORS.get(risk.color.value, colors.black)
+    data = [[
+        Paragraph(f"<b>Risk Score</b>", styles["BodyText9"]),
+        Paragraph(
+            f"<font color='{color.hexval()}'><b>{risk.score:.1f}%</b></font>",
+            styles["BodyText9"],
+        ),
+        Paragraph(f"<b>Level</b>", styles["BodyText9"]),
+        Paragraph(
+            f"<font color='{color.hexval()}'><b>{risk.level.value}</b></font>",
+            styles["BodyText9"],
+        ),
+    ]]
+    t = Table(data, colWidths=[2.5 * cm, 3 * cm, 2 * cm, 3 * cm])
+    t.setStyle(TableStyle([
+        ("FONTSIZE", (0, 0), (-1, -1), 10),
+        ("BOX", (0, 0), (-1, -1), 1.5, color),
+        ("BOTTOMPADDING", (0, 0), (-1, -1), 6),
+        ("TOPPADDING", (0, 0), (-1, -1), 6),
+    ]))
+    return [t]
+
+
+# ---------------------------------------------------------------------------
+# 1. generate_doctor_report  (returns PDF path)
+# ---------------------------------------------------------------------------
+
+def generate_doctor_report(
+    report: ClinicalReport,
+    output_path: str | None = None,
+) -> str:
+    """Generate the clinical/doctor PDF report.
+
+    Sections: patient info, variant ID, drug resistance table,
+    risk score, mutation analysis (resistance / silent / novel),
+    protein similarity, treatment recommendation, confidence,
+    WHO references.
+    """
+    if not output_path:
+        output_path = str(OUTPUT_DIR / f"clinical_report_{report.patient_id}.pdf")
+
+    doc = SimpleDocTemplate(
+        output_path, pagesize=A4,
+        topMargin=1.2 * cm, bottomMargin=1.2 * cm,
+        leftMargin=1.5 * cm, rightMargin=1.5 * cm,
+    )
+    styles = _get_styles()
+    story: list = []
+
+    # -- Header
+    story.extend(_header_block(styles, "Clinical Report"))
+
+    # -- Patient & date
+    meta = [
+        ["Patient ID:", report.patient_id,
+         "Report Date:", report.generated_at.strftime("%Y-%m-%d %H:%M")],
+    ]
+    mt = Table(meta, colWidths=[2.5 * cm, 5 * cm, 2.5 * cm, 5 * cm])
+    mt.setStyle(TableStyle([
+        ("FONTNAME", (0, 0), (0, -1), "Helvetica-Bold"),
+        ("FONTNAME", (2, 0), (2, -1), "Helvetica-Bold"),
+        ("FONTSIZE", (0, 0), (-1, -1), 9),
+    ]))
+    story.append(mt)
+    story.append(Spacer(1, 10))
+
+    variant = report.variant
+
+    # -- Data Quality Summary (top of report — never silently use low quality data)
+    if report.data_quality:
+        story.append(Paragraph("Data Quality Summary", styles["SectionHeader"]))
+        dq_header = ["Source", "Database", "Score", "Confidence", "Use"]
+        dq_rows = [dq_header]
+        for label, qs in report.data_quality.items():
+            score_str = f"{qs.raw_score:.0f}/100"
+            use_str = "Yes" if qs.use_for_analysis else "No"
+            dq_rows.append([label, qs.source.value, score_str, qs.confidence, use_str])
+
+        dqt = Table(dq_rows, colWidths=[3.5 * cm, 4.5 * cm, 2 * cm, 2.5 * cm, 1.5 * cm])
+        dq_style = TableStyle(list(_TABLE_HEADER_STYLE.getCommands()))
+        for i in range(1, len(dq_rows)):
+            conf = dq_rows[i][3]
+            if conf == "REJECT":
+                dq_style.add("TEXTCOLOR", (3, i), (3, i), colors.HexColor("#e74c3c"))
+                dq_style.add("FONTNAME", (3, i), (3, i), "Helvetica-Bold")
+            elif conf == "LOW":
+                dq_style.add("TEXTCOLOR", (3, i), (3, i), colors.HexColor("#e67e22"))
+            elif conf == "HIGH":
+                dq_style.add("TEXTCOLOR", (3, i), (3, i), colors.HexColor("#2ecc71"))
+        dqt.setStyle(dq_style)
+        story.append(dqt)
+
+        if report.treatment_gated:
+            story.append(Spacer(1, 4))
+            story.append(Paragraph(
+                "DATA QUALITY WARNING: One or more data sources scored below "
+                f"{QUALITY_GATE_THRESHOLD}/100. Treatment recommendation requires "
+                "manual verification by laboratory susceptibility testing before clinical use.",
+                styles["WarningText"],
+            ))
+
+        if report.quality_warnings:
+            story.append(Spacer(1, 4))
+            for w in report.quality_warnings:
+                story.append(Paragraph(f"&bull; {w}", styles["SmallItalic"]))
+
+        story.append(Spacer(1, 10))
+
+    # -- Variant Identification
+    story.append(Paragraph("Variant Identification", styles["SectionHeader"]))
+    vi_data = [
+        ["Variant ID", variant.variant_id],
+        ["Name", variant.name or "-"],
+        ["Lineage", variant.lineage or "-"],
+        ["MDR Profile", "Yes" if variant.has_mdr_profile() else "No"],
+        ["XDR Profile", "Yes" if variant.has_xdr_profile() else "No"],
+        ["Source", variant.source or "-"],
+    ]
+    vt = Table(vi_data, colWidths=[4 * cm, 12.5 * cm])
+    vt.setStyle(_KV_TABLE_STYLE)
+    story.append(vt)
+    story.append(Spacer(1, 10))
+
+    # -- Drug Resistance Profile
+    story.append(Paragraph("Drug Resistance Profile", styles["SectionHeader"]))
+    dr_header = ["Drug", "Status", "Gene Responsible"]
+    dr_rows = [dr_header]
+
+    drug_gene_map: dict[str, list[str]] = {}
+    for rg in variant.resistance_genes:
+        for m in rg.mutations:
+            if m.is_resistance_conferring and m.drug_affected:
+                for d in m.drug_affected.split(","):
+                    d_clean = d.strip()
+                    drug_gene_map.setdefault(d_clean, []).append(
+                        f"{rg.gene_name} {m.short_code()}"
+                    )
+
+    for drug, status in variant.drug_resistance.items():
+        genes = drug_gene_map.get(drug, drug_gene_map.get(drug.lower(), ["-"]))
+        dr_rows.append([drug, status.value, ", ".join(genes)])
+
+    for drug in drug_gene_map:
+        if drug.lower() not in {d.lower() for d in variant.drug_resistance}:
+            dr_rows.append([drug, "resistant", ", ".join(drug_gene_map[drug])])
+
+    if len(dr_rows) > 1:
+        drt = Table(dr_rows, colWidths=[4 * cm, 3 * cm, 9.5 * cm])
+        drt.setStyle(_TABLE_HEADER_STYLE)
+        for i in range(1, len(dr_rows)):
+            status = dr_rows[i][1].lower()
+            if status == "resistant":
+                drt.setStyle(TableStyle([
+                    ("TEXTCOLOR", (1, i), (1, i), colors.HexColor("#e74c3c")),
+                    ("FONTNAME", (1, i), (1, i), "Helvetica-Bold"),
+                ]))
+            elif status == "sensitive":
+                drt.setStyle(TableStyle([
+                    ("TEXTCOLOR", (1, i), (1, i), colors.HexColor("#2ecc71")),
+                ]))
+        story.append(drt)
+    else:
+        story.append(Paragraph("No drug resistance data available.", styles["BodyText9"]))
+    story.append(Spacer(1, 10))
+
+    # -- Risk Score
+    story.append(Paragraph("Risk Assessment", styles["SectionHeader"]))
+    story.extend(_risk_badge(report.risk_score, styles))
+    if report.risk_score.factors:
+        story.append(Spacer(1, 6))
+        story.append(Paragraph("Contributing Factors:", styles["SubSection"]))
+        for f in report.risk_score.factors:
+            story.append(Paragraph(f"&bull; {f}", styles["BodyText9"]))
+    story.append(Spacer(1, 10))
+
+    # -- Gene Change Analysis
+    all_muts = variant.all_mutations()
+    if all_muts:
+        story.append(Paragraph("Gene Change Analysis", styles["SectionHeader"]))
+        story.extend(_build_mutation_tables(variant, styles))
+        story.append(Spacer(1, 10))
+
+    # -- Protein Similarity Analysis
+    if report.comparison_result and report.comparison_result.matched_variant_id != "none":
+        story.append(Paragraph("Protein Similarity Analysis", styles["SectionHeader"]))
+        cr = report.comparison_result
+        sim_data = [
+            ["Closest Known Variant", cr.matched_variant_id],
+            ["Weighted Similarity", f"{cr.weighted_final_score:.1f}%"],
+            ["Protein Similarity", f"{cr.protein_similarity_score:.1f}%"],
+            ["Gene Similarity", f"{cr.gene_similarity_score:.1f}%"],
+            ["Confidence", cr.confidence_level.value],
+        ]
+        st = Table(sim_data, colWidths=[4.5 * cm, 12 * cm])
+        st.setStyle(_KV_TABLE_STYLE)
+        story.append(st)
+
+        if cr.novel_mutations:
+            story.append(Spacer(1, 6))
+            story.append(Paragraph(
+                f"<b>{len(cr.novel_mutations)}</b> novel mutation(s) not present "
+                f"in matched variant — flagged for investigation.",
+                styles["WarningText"],
+            ))
+        story.append(Spacer(1, 10))
+
+    # -- Treatment Recommendation
+    if report.treatment:
+        story.append(Paragraph("Treatment Recommendation", styles["SectionHeader"]))
+        for line in report.treatment.split("\n"):
+            line = line.strip()
+            if not line:
+                story.append(Spacer(1, 4))
+            elif line.startswith("==="):
+                continue
+            elif line.startswith("Resistance Class:") or line.startswith("Confidence:"):
+                story.append(Paragraph(f"<b>{line}</b>", styles["BodyText9"]))
+            elif line.startswith("  -") or line.startswith("  *"):
+                story.append(Paragraph(f"&nbsp;&nbsp;{line.strip()}", styles["BodyText9"]))
+            else:
+                story.append(Paragraph(line, styles["BodyText9"]))
+        story.append(Spacer(1, 10))
+
+    # -- Clinical Notes / Confidence
+    if report.doctor_report:
+        story.append(Paragraph("Clinical Notes", styles["SectionHeader"]))
+        for line in report.doctor_report.split("\n"):
+            if line.strip():
+                story.append(Paragraph(line.strip(), styles["BodyText9"]))
+            else:
+                story.append(Spacer(1, 4))
+        story.append(Spacer(1, 10))
+
+    # -- WHO References
+    story.append(Paragraph("References", styles["SectionHeader"]))
+    refs = [
+        "WHO consolidated guidelines on tuberculosis: Module 4 — Treatment (2022 update)",
+        "WHO operational handbook on tuberculosis: Module 4 — Treatment (2022)",
+        "Nepal NTP — National Strategic Plan for TB Prevention, Care and Control (2021-2025)",
+        "WHO catalogue of mutations in Mycobacterium tuberculosis complex, 2nd edition (2023)",
+    ]
+    for i, ref in enumerate(refs, 1):
+        story.append(Paragraph(f"{i}. {ref}", styles["SmallItalic"]))
+
+    # -- Footer
+    story.extend(_footer_block(styles))
+
+    doc.build(story)
+    return output_path
+
+
+# ---------------------------------------------------------------------------
+# 2. generate_patient_report  (returns PDF path)
+# ---------------------------------------------------------------------------
+
+def generate_patient_report(
+    report: ClinicalReport,
+    output_path: str | None = None,
+) -> str:
+    """Generate the patient-facing PDF report.
+
+    Plain language, no jargon. Includes strain name, resistance
+    status, simplified treatment, risk level, what it means,
+    and next steps.
+    """
+    if not output_path:
+        output_path = str(OUTPUT_DIR / f"patient_summary_{report.patient_id}.pdf")
+
+    doc = SimpleDocTemplate(
+        output_path, pagesize=A4,
+        topMargin=2 * cm, bottomMargin=2 * cm,
+        leftMargin=2 * cm, rightMargin=2 * cm,
+    )
+    styles = _get_styles()
+    story: list = []
+
+    # -- Header
+    story.extend(_header_block(styles, "Patient TB Analysis Summary", "#27ae60"))
+
+    story.append(Paragraph(
+        f"<b>Patient ID:</b> {report.patient_id}", styles["PatientBody"],
+    ))
+    story.append(Paragraph(
+        f"<b>Date:</b> {report.generated_at.strftime('%Y-%m-%d')}", styles["PatientBody"],
+    ))
+    story.append(Spacer(1, 12))
+
+    variant = report.variant
+
+    # -- Your TB Strain
+    story.append(Paragraph("About Your TB Strain", styles["PatientHeading"]))
+    strain_name = variant.name or variant.variant_id
+    story.append(Paragraph(
+        f"Your TB strain is called <b>{strain_name}</b>.",
+        styles["PatientBody"],
+    ))
+
+    if variant.lineage:
+        story.append(Paragraph(
+            f"It belongs to <b>{variant.lineage}</b>.",
+            styles["PatientBody"],
+        ))
+
+    # -- Data quality note (simplified for patient)
+    if report.treatment_gated:
+        story.append(Paragraph("Important Notice", styles["PatientHeading"]))
+        story.append(Paragraph(
+            "Some of the laboratory data used in your analysis needs additional "
+            "verification. Your doctor may order further tests to confirm the best "
+            "treatment for you. This is a normal part of ensuring you receive the "
+            "most effective medicines.",
+            styles["PatientBody"],
+        ))
+
+    # -- Resistance status
+    story.append(Paragraph("Medicine Resistance", styles["PatientHeading"]))
+
+    resistant_drugs = variant.resistant_drugs()
+    if not resistant_drugs:
+        story.append(Paragraph(
+            "Your bacteria <b>IS NOT resistant</b> to standard TB medicines. "
+            "This means the regular treatment should work well.",
+            styles["PatientBody"],
+        ))
+    elif variant.has_xdr_profile():
+        story.append(Paragraph(
+            "Your bacteria <b>IS resistant</b> to several TB medicines, "
+            "including both first-line and second-line drugs. "
+            "This is called <b>Extensively Drug-Resistant TB (XDR-TB)</b>. "
+            "You will need specialized treatment at a referral centre.",
+            styles["WarningText"],
+        ))
+    elif variant.has_mdr_profile():
+        story.append(Paragraph(
+            "Your bacteria <b>IS resistant</b> to the two most important TB medicines "
+            "(isoniazid and rifampicin). This is called <b>Multi-Drug Resistant TB (MDR-TB)</b>. "
+            "You will need different medicines, but effective treatment is available.",
+            styles["WarningText"],
+        ))
+    else:
+        drug_list = ", ".join(resistant_drugs)
+        story.append(Paragraph(
+            f"Your bacteria <b>IS resistant</b> to: <b>{drug_list}</b>. "
+            f"Your doctor will adjust your treatment to use medicines that still work.",
+            styles["PatientBody"],
+        ))
+
+    # -- Risk Level
+    story.append(Paragraph("Your Risk Level", styles["PatientHeading"]))
+    risk = report.risk_score
+    color = _RISK_COLORS.get(risk.color.value, colors.black)
+
+    risk_explanations = {
+        "LOW": "Your TB is expected to respond well to treatment.",
+        "MODERATE": "Your TB may need closer monitoring during treatment.",
+        "HIGH": "Your TB requires careful treatment with specialized medicines.",
+        "CRITICAL": "Your TB needs urgent specialist care at a referral centre.",
+    }
+    explanation = risk_explanations.get(risk.level.value, "")
+    story.append(Paragraph(
+        f"Your risk level is <font color='{color.hexval()}'><b>{risk.level.value}</b></font>. "
+        f"{explanation}",
+        styles["PatientBody"],
+    ))
+
+    # -- Simple gene change explanation
+    all_muts = variant.all_mutations()
+    resistance_muts = [m for m in all_muts if m.is_resistance_conferring]
+    silent_muts = [m for m in all_muts if m.is_synonymous]
+
+    if resistance_muts or silent_muts:
+        story.append(Paragraph("What We Found in Your Bacteria", styles["PatientHeading"]))
+
+        if resistance_muts:
+            story.append(Paragraph(
+                f"We found <b>{len(resistance_muts)} change(s)</b> in your bacteria's genes "
+                f"that make it resistant to certain medicines. Your treatment has been "
+                f"adjusted to avoid those medicines.",
+                styles["PatientBody"],
+            ))
+
+        if silent_muts:
+            precursors = [m for m in silent_muts if m.one_step_away_risk]
+            if precursors:
+                story.append(Paragraph(
+                    f"We also found <b>{len(precursors)} silent change(s)</b> that could "
+                    f"potentially develop into resistance in the future. Your doctor will "
+                    f"monitor this closely during treatment.",
+                    styles["PatientBody"],
+                ))
+
+    # -- Treatment Plan
+    story.append(Paragraph("Your Treatment Plan", styles["PatientHeading"]))
+    if report.treatment:
+        treatment_lines = report.treatment.split("\n")
+        regimen_drugs = []
+        for line in treatment_lines:
+            stripped = line.strip()
+            if stripped.startswith("- ") and "[" in stripped:
+                drug_name = stripped.split("[")[0].replace("- ", "").strip()
+                regimen_drugs.append(drug_name)
+
+        if regimen_drugs:
+            drug_text = ", ".join(regimen_drugs[:6])
+            story.append(Paragraph(
+                f"Your treatment plan includes: <b>{drug_text}</b>.",
+                styles["PatientBody"],
+            ))
+
+        for line in treatment_lines:
+            stripped = line.strip()
+            if stripped.startswith("Duration:"):
+                story.append(Paragraph(
+                    f"<b>{stripped}</b>. It is very important to take all your "
+                    f"medicines for the full duration, even if you start feeling better.",
+                    styles["PatientBody"],
+                ))
+                break
+    elif report.patient_report:
+        story.append(Paragraph(report.patient_report, styles["PatientBody"]))
+
+    # -- What This Means For You
+    story.append(Paragraph("What This Means for You", styles["PatientHeading"]))
+
+    meaning_points = [
+        "TB can be cured with the right medicines taken correctly.",
+        "Take your medicines every day as prescribed — do not skip doses.",
+        "You will need regular check-ups to make sure the treatment is working.",
+        "Tell your doctor immediately if you feel worse or have side effects.",
+    ]
+
+    if variant.has_mdr_profile() or variant.has_xdr_profile():
+        meaning_points.append(
+            "Your type of TB needs longer treatment — please be patient and stay committed."
+        )
+
+    for point in meaning_points:
+        story.append(Paragraph(f"&bull; {point}", styles["PatientBody"]))
+
+    # -- Next Steps
+    story.append(Paragraph("Next Steps", styles["PatientHeading"]))
+
+    next_steps = [
+        "Visit your treatment centre as scheduled for Directly Observed Therapy (DOT).",
+    ]
+
+    if variant.has_mdr_profile() or variant.has_xdr_profile():
+        next_steps.append(
+            "Your first follow-up sputum test is in 1 month."
+        )
+        next_steps.append(
+            "ECG and blood tests will be done regularly to check for side effects."
+        )
+    else:
+        next_steps.append(
+            "Your first follow-up sputum test is at 2 months."
+        )
+
+    next_steps.extend([
+        "Contact your health worker if you experience nausea, vision changes, or skin rash.",
+        "Keep all follow-up appointments — your treatment centre will inform you of dates.",
+    ])
+
+    for i, step in enumerate(next_steps, 1):
+        story.append(Paragraph(f"<b>{i}.</b> {step}", styles["PatientBody"]))
+
+    # -- Reassurance
+    story.append(Spacer(1, 16))
+    story.append(Paragraph(
+        "<i>Please follow up with your treating physician for detailed guidance. "
+        "TB is curable — with the right treatment and your commitment, you can get better.</i>",
+        styles["PatientBody"],
+    ))
+
+    # -- Footer
+    story.extend(_footer_block(styles))
+
+    doc.build(story)
+    return output_path
+
+
+# ---------------------------------------------------------------------------
+# 3. generate_pdf_report  (unified entry point)
+# ---------------------------------------------------------------------------
+
+def generate_pdf_report(
+    report: ClinicalReport,
+    version: str = "doctor",
+    output_path: str | None = None,
+) -> str:
+    """Generate a PDF report — either 'doctor' or 'patient' version.
+
+    Returns the path to the generated PDF file.
+    """
+    if version == "patient":
+        return generate_patient_report(report, output_path)
+    return generate_doctor_report(report, output_path)
+
+
+# ---------------------------------------------------------------------------
+# 4. generate_comparison_chart_data
+# ---------------------------------------------------------------------------
+
+def generate_comparison_chart_data(
+    comparison_results: list[ComparisonResult],
+) -> dict:
+    """Prepare structured data for the visualization module.
+
+    Returns dict with labels, scores, and categorized data
+    ready for charts.py functions.
+    """
+    if not comparison_results:
+        return {
+            "labels": [],
+            "weighted_scores": [],
+            "protein_scores": [],
+            "gene_scores": [],
+            "resistance_mutation_counts": [],
+            "novel_mutation_counts": [],
+            "confidence_levels": [],
+            "chart_ready": False,
+        }
+
+    labels = []
+    weighted = []
+    protein = []
+    gene = []
+    res_counts = []
+    novel_counts = []
+    confidences = []
+
+    for cr in comparison_results:
+        labels.append(cr.matched_variant_id)
+        weighted.append(cr.weighted_final_score)
+        protein.append(cr.protein_similarity_score)
+        gene.append(cr.gene_similarity_score)
+        res_counts.append(len(cr.resistance_mutations))
+        novel_counts.append(len(cr.novel_mutations))
+        confidences.append(cr.confidence_level.value)
+
+    top_match = comparison_results[0] if comparison_results else None
+
+    return {
+        "labels": labels,
+        "weighted_scores": weighted,
+        "protein_scores": protein,
+        "gene_scores": gene,
+        "resistance_mutation_counts": res_counts,
+        "novel_mutation_counts": novel_counts,
+        "confidence_levels": confidences,
+        "top_match_id": top_match.matched_variant_id if top_match else None,
+        "top_match_score": top_match.weighted_final_score if top_match else 0.0,
+        "chart_ready": True,
+    }
+
+
+# ---------------------------------------------------------------------------
+# 5. generate_gene_change_table
+# ---------------------------------------------------------------------------
+
+def generate_gene_change_table(
+    mutations: list[Mutation],
+    gene_names: dict[int, str] | None = None,
+) -> str:
+    """Generate a formatted text table of gene changes.
+
+    Columns: Gene | Position | Change | Type | Drug Affected | Risk
+    Color coding is indicated by severity markers in the Risk column.
+    """
+    if not mutations:
+        return "No mutations detected."
+
+    header = f"{'Gene':<8} {'Pos':>5}  {'Change':<10} {'Type':<12} {'Drug Affected':<20} {'Risk':<10}"
+    sep = "-" * len(header)
+    lines = [header, sep]
+
+    for m in mutations:
+        gene = ""
+        if gene_names and m.position in gene_names:
+            gene = gene_names[m.position]
+
+        change = m.short_code()
+
+        if m.mutant_amino_acid == "*":
+            mut_type = "nonsense"
+        elif m.is_synonymous:
+            mut_type = "silent"
+        elif m.is_resistance_conferring:
+            mut_type = "resistance"
+        else:
+            mut_type = "missense"
+
+        drug = m.drug_affected[:20] if m.drug_affected else "-"
+
+        if m.is_resistance_conferring:
+            risk = m.resistance_level.value.upper()
+        elif m.one_step_away_risk:
+            risk = "PRECURSOR"
+        elif m.is_synonymous:
+            risk = "low"
+        else:
+            risk = "unknown"
+
+        lines.append(
+            f"{gene:<8} {m.position:>5}  {change:<10} {mut_type:<12} {drug:<20} {risk:<10}"
+        )
+
+    return "\n".join(lines)
+
+
+# ---------------------------------------------------------------------------
+# Internal: mutation tables for doctor report
+# ---------------------------------------------------------------------------
+
+def _build_mutation_tables(variant: TBVariant, styles) -> list:
+    """Build categorized mutation tables for the doctor report."""
+    elements = []
+
+    resistance_muts = []
+    silent_precursors = []
+    silent_benign = []
+    novel_muts = []
+
+    for rg in variant.resistance_genes:
+        for m in rg.mutations:
+            row = (rg.gene_name, m)
+            if m.is_resistance_conferring:
+                resistance_muts.append(row)
+            elif m.is_synonymous and m.one_step_away_risk:
+                silent_precursors.append(row)
+            elif m.is_synonymous:
+                silent_benign.append(row)
+            else:
+                novel_muts.append(row)
+
+    if resistance_muts:
+        elements.append(Paragraph("Resistance Mutations", styles["SubSection"]))
+        header = ["Gene", "Position", "Change", "Drug Affected", "Level"]
+        rows = [header]
+        for gene, m in resistance_muts:
+            rows.append([
+                gene, str(m.position), m.short_code(),
+                m.drug_affected[:30] if m.drug_affected else "-",
+                m.resistance_level.value,
+            ])
+        t = Table(rows, colWidths=[2 * cm, 2 * cm, 2.5 * cm, 6 * cm, 2.5 * cm])
+        style = TableStyle(list(_TABLE_HEADER_STYLE.getCommands()))
+        for i in range(1, len(rows)):
+            level = rows[i][4].lower()
+            if level == "high":
+                style.add("TEXTCOLOR", (4, i), (4, i), colors.HexColor("#e74c3c"))
+                style.add("FONTNAME", (4, i), (4, i), "Helvetica-Bold")
+            elif level == "moderate":
+                style.add("TEXTCOLOR", (4, i), (4, i), colors.HexColor("#e67e22"))
+        t.setStyle(style)
+        elements.append(t)
+        elements.append(Spacer(1, 6))
+
+    if silent_precursors:
+        elements.append(Paragraph("Silent Precursor Mutations", styles["SubSection"]))
+        header = ["Gene", "Position", "Codon Change", "Risk", "Target Drug"]
+        rows = [header]
+        for gene, m in silent_precursors:
+            codon_change = f"{m.reference_codon}>{m.mutant_codon}" if m.reference_codon else m.short_code()
+            rows.append([
+                gene, str(m.position), codon_change,
+                "PRECURSOR",
+                m.one_step_away_drug or "-",
+            ])
+        t = Table(rows, colWidths=[2 * cm, 2 * cm, 3 * cm, 3 * cm, 5 * cm])
+        style = TableStyle(list(_TABLE_HEADER_STYLE.getCommands()))
+        style.add("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#e67e22"))
+        for i in range(1, len(rows)):
+            style.add("TEXTCOLOR", (3, i), (3, i), colors.HexColor("#e67e22"))
+            style.add("FONTNAME", (3, i), (3, i), "Helvetica-Bold")
+        t.setStyle(style)
+        elements.append(t)
+        elements.append(Paragraph(
+            "<i>Silent precursors: synonymous mutations one nucleotide change away "
+            "from a known resistance mutation. Monitor for resistance emergence.</i>",
+            styles["SmallItalic"],
+        ))
+        elements.append(Spacer(1, 6))
+
+    if novel_muts:
+        elements.append(Paragraph("Novel Mutations (Flagged for Investigation)", styles["SubSection"]))
+        header = ["Gene", "Position", "Change", "AA Change"]
+        rows = [header]
+        for gene, m in novel_muts:
+            aa_change = f"{m.reference_amino_acid}>{m.mutant_amino_acid}" if m.reference_amino_acid else "-"
+            rows.append([gene, str(m.position), m.short_code(), aa_change])
+        t = Table(rows, colWidths=[2.5 * cm, 2.5 * cm, 3 * cm, 5 * cm])
+        style = TableStyle(list(_TABLE_HEADER_STYLE.getCommands()))
+        style.add("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#8e44ad"))
+        t.setStyle(style)
+        elements.append(t)
+        elements.append(Spacer(1, 6))
+
+    if silent_benign:
+        elements.append(Paragraph("Silent Mutations (Benign)", styles["SubSection"]))
+        header = ["Gene", "Position", "Codon Change"]
+        rows = [header]
+        for gene, m in silent_benign:
+            codon_change = f"{m.reference_codon}>{m.mutant_codon}" if m.reference_codon else m.short_code()
+            rows.append([gene, str(m.position), codon_change])
+        t = Table(rows, colWidths=[3 * cm, 3 * cm, 5 * cm])
+        style = TableStyle(list(_TABLE_HEADER_STYLE.getCommands()))
+        style.add("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#95a5a6"))
+        t.setStyle(style)
+        elements.append(t)
+
+    return elements
+
+
+# ---------------------------------------------------------------------------
+# Backward-compatible aliases
+# ---------------------------------------------------------------------------
+
+def generate_clinical_report(
+    report: ClinicalReport,
+    output_path: str | None = None,
+) -> str:
+    """Legacy alias for generate_doctor_report."""
+    return generate_doctor_report(report, output_path)
+
+
+def generate_patient_summary(
+    report: ClinicalReport,
+    output_path: str | None = None,
+) -> str:
+    """Legacy alias for generate_patient_report."""
+    return generate_patient_report(report, output_path)

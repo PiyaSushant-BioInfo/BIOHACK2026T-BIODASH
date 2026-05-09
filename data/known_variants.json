@@ -1,0 +1,376 @@
+{
+  "variants": [
+    {
+      "variant_id": "TB_VAR_001",
+      "strain_name": "H37Rv_katG_S315T",
+      "lineage": "Lineage 4 (Euro-American)",
+      "mutations": [
+        {
+          "gene": "katG",
+          "position": 315,
+          "ref_nucleotide": "AGC",
+          "alt_nucleotide": "ACC",
+          "ref_amino_acid": "S",
+          "alt_amino_acid": "T",
+          "codon_position": 315,
+          "mutation_type": "missense",
+          "frequency": 0.64,
+          "clinical_significance": "High-level isoniazid resistance"
+        }
+      ],
+      "resistance_level": "high_resistance",
+      "resistant_drugs": [
+        "isoniazid"
+      ],
+      "susceptible_drugs": [
+        "rifampicin",
+        "ethambutol",
+        "pyrazinamide",
+        "streptomycin"
+      ],
+      "source": "WHO TB mutation catalogue v2",
+      "date_identified": "1998-01-01",
+      "geographic_origin": "Global"
+    },
+    {
+      "variant_id": "TB_VAR_002",
+      "strain_name": "MDR_rpoB_S531L_katG_S315T",
+      "lineage": "Lineage 2 (Beijing)",
+      "mutations": [
+        {
+          "gene": "rpoB",
+          "position": 531,
+          "ref_nucleotide": "TCG",
+          "alt_nucleotide": "TTG",
+          "ref_amino_acid": "S",
+          "alt_amino_acid": "L",
+          "codon_position": 531,
+          "mutation_type": "missense",
+          "frequency": 0.41,
+          "clinical_significance": "High-level rifampicin resistance"
+        },
+        {
+          "gene": "katG",
+          "position": 315,
+          "ref_nucleotide": "AGC",
+          "alt_nucleotide": "ACC",
+          "ref_amino_acid": "S",
+          "alt_amino_acid": "T",
+          "codon_position": 315,
+          "mutation_type": "missense",
+          "frequency": 0.64,
+          "clinical_significance": "High-level isoniazid resistance"
+        }
+      ],
+      "resistance_level": "multi_drug_resistant",
+      "resistant_drugs": [
+        "isoniazid",
+        "rifampicin"
+      ],
+      "susceptible_drugs": [
+        "fluoroquinolones",
+        "amikacin",
+        "capreomycin",
+        "bedaquiline"
+      ],
+      "source": "WHO TB mutation catalogue v2",
+      "date_identified": "2005-06-15",
+      "geographic_origin": "South-East Asia"
+    },
+    {
+      "variant_id": "TB_VAR_003",
+      "strain_name": "PreXDR_gyrA_D94G",
+      "lineage": "Lineage 2 (Beijing)",
+      "mutations": [
+        {
+          "gene": "rpoB",
+          "position": 531,
+          "ref_nucleotide": "TCG",
+          "alt_nucleotide": "TTG",
+          "ref_amino_acid": "S",
+          "alt_amino_acid": "L",
+          "codon_position": 531,
+          "mutation_type": "missense",
+          "frequency": 0.41,
+          "clinical_significance": "High-level rifampicin resistance"
+        },
+        {
+          "gene": "katG",
+          "position": 315,
+          "ref_nucleotide": "AGC",
+          "alt_nucleotide": "ACC",
+          "ref_amino_acid": "S",
+          "alt_amino_acid": "T",
+          "codon_position": 315,
+          "mutation_type": "missense",
+          "frequency": 0.64,
+          "clinical_significance": "High-level isoniazid resistance"
+        },
+        {
+          "gene": "gyrA",
+          "position": 94,
+          "ref_nucleotide": "GAC",
+          "alt_nucleotide": "GGC",
+          "ref_amino_acid": "D",
+          "alt_amino_acid": "G",
+          "codon_position": 94,
+          "mutation_type": "missense",
+          "frequency": 0.28,
+          "clinical_significance": "Fluoroquinolone resistance"
+        }
+      ],
+      "resistance_level": "pre_extensively_drug_resistant",
+      "resistant_drugs": [
+        "isoniazid",
+        "rifampicin",
+        "levofloxacin",
+        "moxifloxacin"
+      ],
+      "susceptible_drugs": [
+        "bedaquiline",
+        "linezolid",
+        "clofazimine",
+        "cycloserine"
+      ],
+      "source": "WHO TB mutation catalogue v2",
+      "date_identified": "2012-03-20",
+      "geographic_origin": "Nepal"
+    },
+    {
+      "variant_id": "TB_VAR_004",
+      "strain_name": "XDR_rrs_A1401G",
+      "lineage": "Lineage 2 (Beijing)",
+      "mutations": [
+        {
+          "gene": "rpoB",
+          "position": 531,
+          "ref_nucleotide": "TCG",
+          "alt_nucleotide": "TTG",
+          "ref_amino_acid": "S",
+          "alt_amino_acid": "L",
+          "codon_position": 531,
+          "mutation_type": "missense",
+          "frequency": 0.41,
+          "clinical_significance": "High-level rifampicin resistance"
+        },
+        {
+          "gene": "katG",
+          "position": 315,
+          "ref_nucleotide": "AGC",
+          "alt_nucleotide": "ACC",
+          "ref_amino_acid": "S",
+          "alt_amino_acid": "T",
+          "codon_position": 315,
+          "mutation_type": "missense",
+          "frequency": 0.64,
+          "clinical_significance": "High-level isoniazid resistance"
+        },
+        {
+          "gene": "gyrA",
+          "position": 94,
+          "ref_nucleotide": "GAC",
+          "alt_nucleotide": "GGC",
+          "ref_amino_acid": "D",
+          "alt_amino_acid": "G",
+          "codon_position": 94,
+          "mutation_type": "missense",
+          "frequency": 0.28,
+          "clinical_significance": "Fluoroquinolone resistance"
+        },
+        {
+          "gene": "rrs",
+          "position": 1401,
+          "ref_nucleotide": "A",
+          "alt_nucleotide": "G",
+          "ref_amino_acid": null,
+          "alt_amino_acid": null,
+          "codon_position": null,
+          "mutation_type": "missense",
+          "frequency": 0.18,
+          "clinical_significance": "Amikacin/kanamycin resistance"
+        }
+      ],
+      "resistance_level": "extensively_drug_resistant",
+      "resistant_drugs": [
+        "isoniazid",
+        "rifampicin",
+        "levofloxacin",
+        "moxifloxacin",
+        "amikacin",
+        "kanamycin"
+      ],
+      "susceptible_drugs": [
+        "bedaquiline",
+        "linezolid",
+        "clofazimine",
+        "delamanid"
+      ],
+      "source": "WHO TB mutation catalogue v2",
+      "date_identified": "2015-08-10",
+      "geographic_origin": "India"
+    },
+    {
+      "variant_id": "TB_VAR_005",
+      "strain_name": "INH_inhA_C15T",
+      "lineage": "Lineage 1 (Indo-Oceanic)",
+      "mutations": [
+        {
+          "gene": "inhA_promoter",
+          "position": -15,
+          "ref_nucleotide": "C",
+          "alt_nucleotide": "T",
+          "ref_amino_acid": null,
+          "alt_amino_acid": null,
+          "codon_position": null,
+          "mutation_type": "promoter",
+          "frequency": 0.19,
+          "clinical_significance": "Low-level isoniazid resistance, ethionamide cross-resistance"
+        }
+      ],
+      "resistance_level": "low_resistance",
+      "resistant_drugs": [
+        "isoniazid",
+        "ethionamide"
+      ],
+      "susceptible_drugs": [
+        "rifampicin",
+        "ethambutol",
+        "pyrazinamide",
+        "fluoroquinolones"
+      ],
+      "source": "WHO TB mutation catalogue v2",
+      "date_identified": "2001-11-05",
+      "geographic_origin": "South-East Asia"
+    },
+    {
+      "variant_id": "TB_VAR_006",
+      "strain_name": "EMB_embB_M306V",
+      "lineage": "Lineage 3 (Central Asian)",
+      "mutations": [
+        {
+          "gene": "embB",
+          "position": 306,
+          "ref_nucleotide": "ATG",
+          "alt_nucleotide": "GTG",
+          "ref_amino_acid": "M",
+          "alt_amino_acid": "V",
+          "codon_position": 306,
+          "mutation_type": "missense",
+          "frequency": 0.33,
+          "clinical_significance": "Ethambutol resistance"
+        }
+      ],
+      "resistance_level": "moderate_resistance",
+      "resistant_drugs": [
+        "ethambutol"
+      ],
+      "susceptible_drugs": [
+        "isoniazid",
+        "rifampicin",
+        "pyrazinamide",
+        "fluoroquinolones"
+      ],
+      "source": "WHO TB mutation catalogue v2",
+      "date_identified": "2003-04-22",
+      "geographic_origin": "Nepal"
+    },
+    {
+      "variant_id": "TB_VAR_007",
+      "strain_name": "PZA_pncA_H57D",
+      "lineage": "Lineage 4 (Euro-American)",
+      "mutations": [
+        {
+          "gene": "pncA",
+          "position": 57,
+          "ref_nucleotide": "CAC",
+          "alt_nucleotide": "GAC",
+          "ref_amino_acid": "H",
+          "alt_amino_acid": "D",
+          "codon_position": 57,
+          "mutation_type": "missense",
+          "frequency": 0.12,
+          "clinical_significance": "Pyrazinamide resistance"
+        }
+      ],
+      "resistance_level": "moderate_resistance",
+      "resistant_drugs": [
+        "pyrazinamide"
+      ],
+      "susceptible_drugs": [
+        "isoniazid",
+        "rifampicin",
+        "ethambutol",
+        "fluoroquinolones"
+      ],
+      "source": "WHO TB mutation catalogue v2",
+      "date_identified": "2007-09-14",
+      "geographic_origin": "Global"
+    },
+    {
+      "variant_id": "TB_VAR_008",
+      "strain_name": "Silent_rpoB_F514F",
+      "lineage": "Lineage 2 (Beijing)",
+      "mutations": [
+        {
+          "gene": "rpoB",
+          "position": 514,
+          "ref_nucleotide": "TTC",
+          "alt_nucleotide": "TTT",
+          "ref_amino_acid": "F",
+          "alt_amino_acid": "F",
+          "codon_position": 514,
+          "mutation_type": "silent",
+          "frequency": 0.05,
+          "clinical_significance": "Silent mutation - potential resistance precursor in RRDR"
+        }
+      ],
+      "resistance_level": "susceptible",
+      "resistant_drugs": [],
+      "susceptible_drugs": [
+        "isoniazid",
+        "rifampicin",
+        "ethambutol",
+        "pyrazinamide"
+      ],
+      "source": "Research - Nepal TB surveillance",
+      "date_identified": "2023-01-10",
+      "geographic_origin": "Nepal"
+    },
+    {
+      "variant_id": "TB_NEW_20260508234930",
+      "strain_name": "New_katG_20260508",
+      "lineage": "",
+      "mutations": [],
+      "resistance_level": "susceptible",
+      "resistant_drugs": [],
+      "susceptible_drugs": [],
+      "source": "Direct sequence input",
+      "date_identified": "2026-05-08T23:49:30.312259",
+      "geographic_origin": ""
+    },
+    {
+      "variant_id": "TB_NEW_20260508235229",
+      "strain_name": "New_inhA_20260508",
+      "lineage": "",
+      "mutations": [],
+      "resistance_level": "susceptible",
+      "resistant_drugs": [],
+      "susceptible_drugs": [],
+      "source": "NCBI:WP_057374033",
+      "date_identified": "2026-05-08T23:52:29.533395",
+      "geographic_origin": ""
+    },
+    {
+      "variant_id": "TB_NEW_20260509055010",
+      "strain_name": "New_gyrA_20260509",
+      "lineage": "",
+      "mutations": [],
+      "resistance_level": "susceptible",
+      "resistant_drugs": [],
+      "susceptible_drugs": [],
+      "source": "NCBI:CP172229",
+      "date_identified": "2026-05-09T05:50:11.148790",
+      "geographic_origin": ""
+    }
+  ]
+}

@@ -1,0 +1,335 @@
+{% extends "base.html" %}
+{% block title %}TBAnalytica — Results{% endblock %}
+
+{% block content %}
+<div class="results-page">
+    <button class="back-btn" onclick="window.location='/'">&larr; New Analysis</button>
+
+    {% if notification %}
+    <div class="notification-banner">
+        <span class="notification-icon">&#9432;</span>
+        {{ notification }}
+    </div>
+    {% endif %}
+
+    {% if data.mode == "compare" %}
+    <!-- ── COMPARE RESULTS ─────────────────────────────────────────── -->
+    <h1 class="results-title">Comparison Results</h1>
+
+    <div class="summary-cards">
+        <div class="summary-card">
+            <div class="card-label">First Variant</div>
+            <div class="card-value">{{ data.known_variant.name or data.known_variant.variant_id }}</div>
+            <div class="card-sub">{{ data.known_variant.lineage }}</div>
+        </div>
+        <div class="summary-card">
+            <div class="card-label">Second Variant</div>
+            <div class="card-value">{{ data.new_variant.variant_id }}</div>
+            <div class="card-sub">{{ data.new_variant.name }}</div>
+        </div>
+        {% if data.comparison %}
+        <div class="summary-card">
+            <div class="card-label">Similarity</div>
+            <div class="card-value">{{ "%.1f"|format(data.comparison.similarity) }}%</div>
+            <div class="card-sub">Confidence: {{ data.comparison.confidence }}</div>
+        </div>
+        {% endif %}
+        <div class="summary-card">
+            <div class="card-label">Risk Delta</div>
+            <div class="card-value {% if data.risk_delta > 0 %}text-red{% elif data.risk_delta < 0 %}text-green{% endif %}">
+                {{ "%+.1f"|format(data.risk_delta) }}%
+            </div>
+            <div class="card-sub">
+                {{ "%.0f"|format(data.known_risk.score) }}% &rarr; {{ "%.0f"|format(data.new_risk.score) }}%
+            </div>
+        </div>
+    </div>
+
+    {% if data.comparison %}
+    <div class="detail-section">
+        <h2>Similarity Breakdown</h2>
+        <table class="data-table">
+            <thead><tr><th>Metric</th><th>Score</th></tr></thead>
+            <tbody>
+                <tr><td>Weighted Similarity</td><td>{{ "%.1f"|format(data.comparison.similarity) }}%</td></tr>
+                <tr><td>Protein Similarity</td><td>{{ "%.1f"|format(data.comparison.protein_similarity) }}%</td></tr>
+                <tr><td>Gene Similarity</td><td>{{ "%.1f"|format(data.comparison.gene_similarity) }}%</td></tr>
+                <tr><td>Confidence</td><td>{{ data.comparison.confidence }}</td></tr>
+            </tbody>
+        </table>
+    </div>
+    {% endif %}
+
+    {% if data.quality_scores %}
+    <div class="detail-section">
+        <h2>Data Quality</h2>
+        <table class="data-table">
+            <thead><tr><th>Source</th><th>Score</th><th>Confidence</th></tr></thead>
+            <tbody>
+            {% for label, qs in data.quality_scores.items() %}
+                <tr>
+                    <td>{{ label }}</td>
+                    <td>{{ "%.0f"|format(qs.score) }}/100</td>
+                    <td><span class="badge badge-{{ qs.confidence|lower }}">{{ qs.confidence }}</span></td>
+                </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% endif %}
+
+    {% else %}
+    <!-- ── ANALYSIS RESULTS ────────────────────────────────────────── -->
+    <h1 class="results-title">Analysis Results</h1>
+
+    <!-- Summary cards row -->
+    <div class="summary-cards">
+        <div class="summary-card">
+            <div class="card-label">Variant</div>
+            <div class="card-value">{{ data.variant.name or data.variant.variant_id }}</div>
+            <div class="card-sub">{{ data.variant.lineage }}</div>
+        </div>
+
+        <div class="summary-card risk-card risk-{{ data.risk.color }}">
+            <div class="card-label">Risk Score</div>
+            <div class="card-value risk-number">{{ "%.0f"|format(data.risk.score) }}</div>
+            <div class="card-sub">{{ data.risk.level }}</div>
+        </div>
+
+        <div class="summary-card">
+            <div class="card-label">MDR Status</div>
+            <div class="card-value">
+                {% if "XDR" in data.mdr_status %}
+                    <span class="badge badge-critical">{{ data.mdr_status }}</span>
+                {% elif "MDR" in data.mdr_status %}
+                    <span class="badge badge-high">{{ data.mdr_status }}</span>
+                {% elif "susceptible" in data.mdr_status %}
+                    <span class="badge badge-low">{{ data.mdr_status }}</span>
+                {% else %}
+                    <span class="badge badge-moderate">{{ data.mdr_status }}</span>
+                {% endif %}
+            </div>
+            <div class="card-sub">Patient: {{ data.patient_id }}</div>
+        </div>
+
+        <div class="summary-card">
+            <div class="card-label">Data Quality</div>
+            <div class="card-value">{{ "%.0f"|format(data.quality.avg_score) }}<span class="score-suffix">/100</span></div>
+            <div class="card-sub">
+                {% if data.quality.treatment_gated %}
+                    <span class="badge badge-high">GATED</span>
+                {% else %}
+                    <span class="badge badge-low">OK</span>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Tabs -->
+    <div class="tabs">
+        <button class="tab active" data-tab="clinical">Clinical Report</button>
+        <button class="tab" data-tab="patient">Patient Report</button>
+        <button class="tab" data-tab="genes">Gene Analysis</button>
+        <button class="tab" data-tab="protein">Protein Comparison</button>
+        <button class="tab" data-tab="quality">Data Quality</button>
+    </div>
+
+    <!-- Tab: Clinical Report -->
+    <div class="tab-panel active" id="tab-clinical">
+        <div class="report-text">
+            {% if data.treatment_text %}
+            <h3>Treatment Recommendation</h3>
+            <pre class="treatment-block">{{ data.treatment_text }}</pre>
+            {% endif %}
+
+            <h3>Clinical Notes</h3>
+            {% for line in data.doctor_report.split('\n') %}
+                {% if line.strip() %}
+                <p>{{ line }}</p>
+                {% endif %}
+            {% endfor %}
+
+            {% if data.treatment.warnings %}
+            <div class="warnings-box">
+                <h4>Warnings</h4>
+                {% for w in data.treatment.warnings %}
+                <p class="warning-line">{{ w }}</p>
+                {% endfor %}
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Tab: Patient Report -->
+    <div class="tab-panel" id="tab-patient">
+        <div class="patient-report-text">
+            <p class="patient-text-large">{{ data.patient_report }}</p>
+
+            {% if data.resistant_drugs %}
+            <h3>Medicines Your Bacteria Resists</h3>
+            <div class="drug-badges">
+                {% for drug in data.resistant_drugs %}
+                <span class="badge badge-high">{{ drug }}</span>
+                {% endfor %}
+            </div>
+            {% endif %}
+
+            <h3>Your Risk Level</h3>
+            <p class="patient-text-large">
+                Risk level: <strong class="risk-text-{{ data.risk.color }}">{{ data.risk.level }}</strong>
+            </p>
+
+            {% if data.risk.factors %}
+            <h3>Contributing Factors</h3>
+            <ul>
+                {% for f in data.risk.factors %}
+                <li>{{ f }}</li>
+                {% endfor %}
+            </ul>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Tab: Gene Analysis -->
+    <div class="tab-panel" id="tab-genes">
+        {% if data.mutations %}
+        <table class="data-table mutation-table">
+            <thead>
+                <tr>
+                    <th>Gene</th>
+                    <th>Position</th>
+                    <th>Change</th>
+                    <th>Type</th>
+                    <th>Drug Affected</th>
+                    <th>Risk</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for m in data.mutations %}
+                <tr class="mut-row mut-{{ m.type }}">
+                    <td><strong>{{ m.gene }}</strong></td>
+                    <td>{{ m.position }}</td>
+                    <td><code>{{ m.change }}</code></td>
+                    <td><span class="badge badge-mut-{{ m.type }}">{{ m.type }}</span></td>
+                    <td>{{ m.drug_affected }}</td>
+                    <td>{{ m.risk }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <p class="empty-state">No mutations detected.</p>
+        {% endif %}
+    </div>
+
+    <!-- Tab: Protein Comparison -->
+    <div class="tab-panel" id="tab-protein">
+        {% if data.comparisons %}
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Rank</th>
+                    <th>Variant</th>
+                    <th>Weighted Score</th>
+                    <th>Protein</th>
+                    <th>Gene</th>
+                    <th>Confidence</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for c in data.comparisons %}
+                <tr>
+                    <td>{{ loop.index }}</td>
+                    <td><strong>{{ c.variant_id }}</strong></td>
+                    <td>{{ "%.1f"|format(c.weighted_score) }}%</td>
+                    <td>{{ "%.1f"|format(c.protein_score) }}%</td>
+                    <td>{{ "%.1f"|format(c.gene_score) }}%</td>
+                    <td><span class="badge badge-{{ c.confidence|lower }}">{{ c.confidence }}</span></td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <p class="empty-state">No comparison data available.</p>
+        {% endif %}
+    </div>
+
+    <!-- Tab: Data Quality -->
+    <div class="tab-panel" id="tab-quality">
+        {% if data.quality.scores %}
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Source</th>
+                    <th>Database</th>
+                    <th>Score</th>
+                    <th>Confidence</th>
+                    <th>Use for Analysis</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for q in data.quality.scores %}
+                <tr>
+                    <td>{{ q.label }}</td>
+                    <td>{{ q.source }}</td>
+                    <td>{{ "%.0f"|format(q.score) }}/100</td>
+                    <td><span class="badge badge-{{ q.confidence|lower }}">{{ q.confidence }}</span></td>
+                    <td>{{ "Yes" if q.use_for_analysis else "No" }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+
+        {% if data.quality.treatment_gated %}
+        <div class="warnings-box">
+            <h4>Treatment Gated</h4>
+            <p>One or more data sources scored below 60/100. Treatment recommendation
+               requires manual verification by laboratory susceptibility testing.</p>
+        </div>
+        {% endif %}
+
+        {% if data.quality.warnings %}
+        <div class="quality-warnings">
+            <h4>Quality Warnings</h4>
+            {% for w in data.quality.warnings %}
+            <p class="warning-line">{{ w }}</p>
+            {% endfor %}
+        </div>
+        {% endif %}
+        {% else %}
+        <p class="empty-state">No data quality information available.</p>
+        {% endif %}
+    </div>
+
+    <!-- Charts section -->
+    {% if data.charts %}
+    <div class="detail-section">
+        <h2>Charts</h2>
+        <div class="charts-grid">
+            {% for name, path in data.charts.items() %}
+            <div class="chart-item">
+                <h4>{{ name | replace("_", " ") | title }}</h4>
+                {% if path.endswith('.png') %}
+                <img src="/chart/{{ path }}" alt="{{ name }}" loading="lazy">
+                {% elif path.endswith('.html') %}
+                <a href="/chart/{{ path }}" target="_blank" class="btn btn-small">Open Interactive Chart</a>
+                {% endif %}
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Downloads -->
+    <div class="detail-section download-section">
+        <h2>Downloads</h2>
+        <div class="download-buttons">
+            <a href="/download/{{ job_id }}/doctor_pdf" class="btn btn-primary">Download Doctor Report (PDF)</a>
+            <a href="/download/{{ job_id }}/patient_pdf" class="btn btn-secondary">Download Patient Report (PDF)</a>
+            <a href="/download/{{ job_id }}/charts_zip" class="btn btn-secondary">Download All Charts (ZIP)</a>
+        </div>
+    </div>
+
+    {% endif %}
+</div>
+{% endblock %}

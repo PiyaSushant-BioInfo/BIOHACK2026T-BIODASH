@@ -1,0 +1,128 @@
+{
+  "genes": {
+    "katG": {
+      "full_name": "Catalase-peroxidase",
+      "drug_target": "isoniazid",
+      "ncbi_gene_id": "886523",
+      "uniprot_id": "P9WIE5",
+      "pdb_id": "1SJ2",
+      "reference_length": 740,
+      "mutations": {
+        "S315T": {"resistance": "high", "frequency": 0.64, "drugs": ["isoniazid"], "mic_fold_change": ">256x"},
+        "S315N": {"resistance": "high", "frequency": 0.04, "drugs": ["isoniazid"], "mic_fold_change": "64-128x"},
+        "S315R": {"resistance": "high", "frequency": 0.01, "drugs": ["isoniazid"], "mic_fold_change": "128x"},
+        "W300G": {"resistance": "moderate", "frequency": 0.02, "drugs": ["isoniazid"], "mic_fold_change": "16-32x"},
+        "R463L": {"resistance": "low", "frequency": 0.08, "drugs": ["isoniazid"], "mic_fold_change": "2-4x"}
+      }
+    },
+    "rpoB": {
+      "full_name": "RNA polymerase beta subunit",
+      "drug_target": "rifampicin",
+      "ncbi_gene_id": "888164",
+      "uniprot_id": "P9WGY9",
+      "pdb_id": "5UHC",
+      "reference_length": 1172,
+      "rrdr_region": [426, 452],
+      "mutations": {
+        "S531L": {"resistance": "high", "frequency": 0.41, "drugs": ["rifampicin"], "mic_fold_change": ">256x"},
+        "H526Y": {"resistance": "high", "frequency": 0.09, "drugs": ["rifampicin"], "mic_fold_change": "64-128x"},
+        "H526D": {"resistance": "high", "frequency": 0.06, "drugs": ["rifampicin"], "mic_fold_change": "128x"},
+        "D516V": {"resistance": "moderate", "frequency": 0.08, "drugs": ["rifampicin"], "mic_fold_change": "8-32x"},
+        "D516Y": {"resistance": "moderate", "frequency": 0.03, "drugs": ["rifampicin"], "mic_fold_change": "16x"},
+        "L533P": {"resistance": "high", "frequency": 0.02, "drugs": ["rifampicin"], "mic_fold_change": "64x"}
+      },
+      "silent_precursors": {
+        "F514F": {"position": 514, "codon_change": "TTC->TTT", "risk": "moderate", "note": "Within RRDR, may indicate ongoing selection pressure"},
+        "L521L": {"position": 521, "codon_change": "CTG->CTC", "risk": "low", "note": "Near key resistance positions"},
+        "S531S": {"position": 531, "codon_change": "TCG->TCA", "risk": "high", "note": "Same codon as S531L, one step from resistance"}
+      }
+    },
+    "inhA": {
+      "full_name": "Enoyl-ACP reductase",
+      "drug_target": "isoniazid",
+      "ncbi_gene_id": "886709",
+      "uniprot_id": "P9WGR1",
+      "pdb_id": "4TZK",
+      "reference_length": 269,
+      "mutations": {
+        "S94A": {"resistance": "moderate", "frequency": 0.05, "drugs": ["isoniazid", "ethionamide"], "mic_fold_change": "8-16x"},
+        "I194T": {"resistance": "low", "frequency": 0.03, "drugs": ["isoniazid", "ethionamide"], "mic_fold_change": "4x"}
+      },
+      "promoter_mutations": {
+        "C-15T": {"resistance": "moderate", "frequency": 0.19, "drugs": ["isoniazid", "ethionamide"], "mic_fold_change": "4-8x"},
+        "T-8C": {"resistance": "low", "frequency": 0.02, "drugs": ["isoniazid"], "mic_fold_change": "2x"},
+        "T-8A": {"resistance": "low", "frequency": 0.01, "drugs": ["isoniazid"], "mic_fold_change": "2x"}
+      }
+    },
+    "embB": {
+      "full_name": "Arabinosyltransferase B",
+      "drug_target": "ethambutol",
+      "ncbi_gene_id": "887081",
+      "uniprot_id": "P9WGE7",
+      "pdb_id": null,
+      "reference_length": 1024,
+      "mutations": {
+        "M306V": {"resistance": "high", "frequency": 0.33, "drugs": ["ethambutol"], "mic_fold_change": "8-16x"},
+        "M306I": {"resistance": "high", "frequency": 0.12, "drugs": ["ethambutol"], "mic_fold_change": "8x"},
+        "G406A": {"resistance": "moderate", "frequency": 0.05, "drugs": ["ethambutol"], "mic_fold_change": "4x"},
+        "Q497R": {"resistance": "moderate", "frequency": 0.04, "drugs": ["ethambutol"], "mic_fold_change": "4-8x"}
+      }
+    },
+    "pncA": {
+      "full_name": "Pyrazinamidase/nicotinamidase",
+      "drug_target": "pyrazinamide",
+      "ncbi_gene_id": "887674",
+      "uniprot_id": "P9WIB7",
+      "pdb_id": "3PL1",
+      "reference_length": 186,
+      "mutations": {
+        "H57D": {"resistance": "high", "frequency": 0.12, "drugs": ["pyrazinamide"], "mic_fold_change": ">256x"},
+        "D49N": {"resistance": "high", "frequency": 0.06, "drugs": ["pyrazinamide"], "mic_fold_change": "128x"},
+        "V139A": {"resistance": "moderate", "frequency": 0.04, "drugs": ["pyrazinamide"], "mic_fold_change": "16x"},
+        "T135P": {"resistance": "moderate", "frequency": 0.03, "drugs": ["pyrazinamide"], "mic_fold_change": "8x"},
+        "Q10P": {"resistance": "moderate", "frequency": 0.02, "drugs": ["pyrazinamide"], "mic_fold_change": "8x"}
+      }
+    },
+    "gyrA": {
+      "full_name": "DNA gyrase subunit A",
+      "drug_target": "fluoroquinolones",
+      "ncbi_gene_id": "886534",
+      "uniprot_id": "P9WG51",
+      "pdb_id": "5BS8",
+      "reference_length": 838,
+      "qrdr_region": [88, 94],
+      "mutations": {
+        "D94G": {"resistance": "high", "frequency": 0.28, "drugs": ["levofloxacin", "moxifloxacin"], "mic_fold_change": "16-32x"},
+        "D94A": {"resistance": "moderate", "frequency": 0.06, "drugs": ["levofloxacin", "moxifloxacin"], "mic_fold_change": "8x"},
+        "D94N": {"resistance": "moderate", "frequency": 0.04, "drugs": ["levofloxacin", "moxifloxacin"], "mic_fold_change": "8x"},
+        "A90V": {"resistance": "moderate", "frequency": 0.12, "drugs": ["levofloxacin", "moxifloxacin"], "mic_fold_change": "4-8x"},
+        "S91P": {"resistance": "moderate", "frequency": 0.03, "drugs": ["levofloxacin", "moxifloxacin"], "mic_fold_change": "4x"}
+      }
+    },
+    "gyrB": {
+      "full_name": "DNA gyrase subunit B",
+      "drug_target": "fluoroquinolones",
+      "ncbi_gene_id": "886124",
+      "uniprot_id": "P9WG49",
+      "pdb_id": null,
+      "reference_length": 675,
+      "mutations": {
+        "N538D": {"resistance": "moderate", "frequency": 0.02, "drugs": ["levofloxacin", "moxifloxacin"], "mic_fold_change": "4x"},
+        "E540V": {"resistance": "moderate", "frequency": 0.01, "drugs": ["levofloxacin", "moxifloxacin"], "mic_fold_change": "4-8x"}
+      }
+    },
+    "rrs": {
+      "full_name": "16S rRNA",
+      "drug_target": "aminoglycosides",
+      "ncbi_gene_id": "888816",
+      "uniprot_id": null,
+      "pdb_id": null,
+      "reference_length": 1537,
+      "mutations": {
+        "A1401G": {"resistance": "high", "frequency": 0.18, "drugs": ["amikacin", "kanamycin", "capreomycin"], "mic_fold_change": ">64x"},
+        "C1402T": {"resistance": "moderate", "frequency": 0.03, "drugs": ["amikacin", "kanamycin"], "mic_fold_change": "8-16x"},
+        "G1484T": {"resistance": "moderate", "frequency": 0.02, "drugs": ["amikacin", "kanamycin", "capreomycin"], "mic_fold_change": "8x"}
+      }
+    }
+  }
+}

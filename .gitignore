@@ -1,0 +1,10 @@
+.env
+__pycache__/
+.cache/
+logs/
+output/
+dist/
+build/
+app.spec
+*.pyc
+*.pyo
