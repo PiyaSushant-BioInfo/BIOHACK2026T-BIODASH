@@ -24,7 +24,7 @@ from 14.6% (2015) to 59% (2020).
 
 # 1. Clone the repository
 ```
-git clone https://github.com/PiyaSushant-BioInfo/TBAnalytica.git
+git clone https://github.com/PiyaSushant-BioInfo/BIOHACK2026T-BIODASH.git
 cd TBAnalytica
 ```
 
@@ -49,13 +49,16 @@ python app.py
 
 ## 💻 Usage
 
-### Web Interface (Recommended)
+### Web Interface 
+```
 python app.py
+```
 Then open http://localhost:5000
 
 ### Command Line
+```
 python main.py
-
+```
 ---
 
 ## 🔬 Features
