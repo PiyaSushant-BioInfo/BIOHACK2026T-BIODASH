@@ -23,7 +23,7 @@ from 14.6% (2015) to 59% (2020).
 ### Installation
 
 # 1. Clone the repository
-git clone https://github.com/[YOUR_USERNAME]/TBAnalytica.git
+git clone https://github.com/PiyaSushant-BioInfo/TBAnalytica.git
 cd TBAnalytica
 
 # 2. Install dependencies
