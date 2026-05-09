@@ -23,18 +23,24 @@ from 14.6% (2015) to 59% (2020).
 ### Installation
 
 # 1. Clone the repository
+```
 git clone https://github.com/PiyaSushant-BioInfo/TBAnalytica.git
 cd TBAnalytica
+```
 
 # 2. Install dependencies
+```
 pip install -r requirements.txt
-
+```
 # 3. Set up environment variables
+```
 cp .env.example .env
 # Edit .env and add your NCBI API key (free at https://www.ncbi.nlm.nih.gov/account/)
-
+```
 # 4. Run the web interface
+```
 python app.py
+```
 
 # 5. Open browser
 # Navigate to http://localhost:5000
